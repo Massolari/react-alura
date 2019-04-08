@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import InputCustomizado from './componentes/InputCustomizado';
-import { addLivro, getLivros, deleteLivro } from './persistence';
+import SelectCustomizado from './componentes/SelectCustomizado';
+import { addLivro, getLivros, deleteLivro, getAutores } from './persistence';
 import PubSub from 'pubsub-js';
 import TratadorErros from  './TratadorErros';
 
@@ -8,20 +9,25 @@ class FormularioLivro extends Component {
 
     constructor() {
         super();
+        const autores = getAutores();
+        const semAutor = { id: 0, desc: 'Selecione um autor...' };
         this.stateLimpo = {
-            nome: ''
+            titulo: '',
+            preco: '',
+            autor: semAutor.id,
+            autores: [semAutor].concat(autores)
         };
         this.state = Object.assign({}, this.stateLimpo);
         this.enviaForm = this.enviaForm.bind(this);
-        this.setNome = this.setNome.bind(this);
-        // this.setEmail = this.setEmail.bind(this);
-        // this.setSenha = this.setSenha.bind(this);
+        this.setTitulo = this.setTitulo.bind(this);
+        this.setPreco = this.setPreco.bind(this);
+        this.setAutor = this.setAutor.bind(this);
     }
 
     enviaForm(evento){
         evento.preventDefault();
-        const { nome } = this.state;
-        const livro = { nome };
+        const { titulo, preco, autor } = this.state;
+        const livro = { titulo, preco, autor };
         PubSub.publish("limpa-erros",{});
         try {
             const novaLista = addLivro(livro);
@@ -33,23 +39,25 @@ class FormularioLivro extends Component {
         }
     }
 
-    setNome(evento){
-        this.setState({nome:evento.target.value});
+    setTitulo(evento){
+        this.setState({ titulo: evento.target.value });
     }
 
-    setEmail(evento){
-        this.setState({email:evento.target.value});
+    setPreco(evento){
+        this.setState({ preco: evento.target.value });
     }
 
-    setSenha(evento){
-        this.setState({senha:evento.target.value});
+    setAutor(evento){
+        this.setState({ autor: Number(evento.target.value) });
     }
 
     render() {
         return (
             <div className="pure-form pure-form-aligned">
                 <form className="pure-form pure-form-aligned" onSubmit={this.enviaForm} method="post">
-                    <InputCustomizado id="nome" type="text" name="nome" value={this.state.nome} onChange={this.setNome} label="Nome"/>
+                    <InputCustomizado id="titulo" type="text" name="titulo" value={this.state.titulo} onChange={this.setTitulo} label="Título"/>
+                    <InputCustomizado id="preco" type="number" name="preco" value={this.state.preco} onChange={this.setPreco} label="Preço"/>
+                    <SelectCustomizado id="autor" label="Autor" name="autor" value={this.state.autor} options={this.state.autores.map(a => ({ desc: a.nome, ...a }))} onChange={this.setAutor}></SelectCustomizado>
                     <div className="pure-control-group">
                         <label></label>
                         <button type="submit" className="pure-button pure-button-primary">Gravar</button>
@@ -70,7 +78,9 @@ class TabelaLivros extends Component {
                 <table className="pure-table">
                     <thead>
                         <tr>
-                            <th>Nome</th>
+                            <th>Título</th>
+                            <th>Preço</th>
+                            <th>Autor</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -79,7 +89,9 @@ class TabelaLivros extends Component {
                             this.props.lista.map((livro) => {
                                 return (
                                     <tr key={livro.id}>
-                                        <td>{livro.nome}</td>
+                                        <td>{livro.titulo}</td>
+                                        <td>{livro.preco}</td>
+                                        <td>{livro.autor.nome}</td>
                                         <td><button onClick={() => this.props.onDeletarLivro(livro.id)}>X</button></td>
                                     </tr>
                                 );
